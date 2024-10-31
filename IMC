@@ -1,0 +1,137 @@
+import tkinter as tk
+import matplotlib.pyplot as plt
+import csv
+from datetime import datetime
+
+# Función para calcular el IMC
+def calculate_bmi():
+    try:
+        height = float(height_entry.get()) / 100  # Convertir cm a metros
+        weight = float(weight_entry.get())
+        bmi = weight / (height ** 2)  # Fórmula IMC
+        
+        user = user_name.get()
+        
+        # Proporcionar recomendaciones basadas en el IMC
+        if bmi < 18.5:
+            result = f"""{user}, La delgadez puede deberse a diversos factores, tales como genéticos y dietéticos. 
+Independiente de su causa, es importante para tu bienestar mantener un peso saludable. 
+Recomendaciones: solicitar cita médica de manera urgente."""
+        elif 18.5 <= bmi < 24.9:
+            result = f"""{user}, su estado es saludable y tienes el peso ideal para tu IMC 
+Una dieta balanceada y ejercicio ayudan a mantenerse en esta categoría."""
+        else:
+            result = f"""{user}, Cuidado, la obesidad genera complicaciones mayores en el organismo y acorta la vida. 
+Es esencial abordar este estado con una dieta balanceada, ejercicio y, en determinadas ocasiones, con cirugía."""
+        
+        # Actualizar el label de resultado
+        result_label.config(text=f"Tu IMC es: {bmi:.2f}\n{result}")
+        
+        # Guardar la información en un archivo CSV
+        save_bmi(user, bmi)
+        
+    except ValueError:
+        result_label.config(text="Por favor, ingresa valores válidos.")
+
+# Función para guardar el IMC del usuario en un archivo
+def save_bmi(user, bmi):
+    with open("bmi_data.csv", "a", newline="") as file:
+        writer = csv.writer(file)
+        writer.writerow([user, bmi, datetime.now().strftime("%Y-%m-%d %H:%M:%S")])
+
+# Función para mostrar la evolución del IMC del usuario con referencia de niveles de peso
+def show_progress():
+    user = user_name.get()
+    dates = []
+    bmis = []
+    
+    # Leer los datos del archivo CSV
+    with open("bmi_data.csv", "r") as file:
+        reader = csv.reader(file)
+        for row in reader:
+            if row[0] == user:
+                bmis.append(float(row[1]))
+                dates.append(row[2])
+    
+    if bmis:
+        # Crear gráfico de evolución del IMC
+        plt.plot(dates, bmis, marker='o', label="IMC del usuario")
+        plt.title(f"Evolución del IMC de {user}")
+        plt.xlabel("Fecha")
+        plt.ylabel("IMC")
+        plt.xticks(rotation=45)
+        
+        # Agregar líneas horizontales para niveles de peso
+        plt.axhline(y=18.5, color='orange', linestyle='--', label="Bajo peso (IMC < 18.5)")
+        plt.axhline(y=24.9, color='green', linestyle='--', label="Normal (IMC 18.5-24.9)")
+        plt.axhline(y=29.9, color='blue', linestyle='--', label="Sobrepeso (IMC 25.0-29.9)")
+        plt.axhline(y=30, color='red', linestyle='--', label="Obesidad (IMC >= 30.0)")
+        
+        plt.legend()  # Mostrar la leyenda
+        plt.tight_layout()
+        plt.show()
+    else:
+        result_label.config(text="No hay datos para este usuario.")
+
+# Función para limpiar los campos
+def clear_fields():
+    user_name.delete(0, tk.END)
+    height_entry.delete(0, tk.END)
+    weight_entry.delete(0, tk.END)
+    result_label.config(text="")  # Limpiar el resultado
+
+# Configuración de la ventana principal
+ventana = tk.Tk()
+ventana.title("Índice Masa Corporal")
+ventana.geometry("770x400")
+ventana.config(bg="#f0f4f7")  # Color de fondo claro
+
+# Ajustar configuración de las columnas para centrado
+ventana.grid_columnconfigure(0, weight=1)
+ventana.grid_columnconfigure(1, weight=1)
+
+# Crear etiqueta del título
+title_label = tk.Label(text="Índice de Masa Corporal", font=("Arial", 18, "bold"), fg="#2c3e50", bg="#f0f4f7", justify="center")
+title_label.grid(row=0, column=0, columnspan=2, pady=10, sticky="nsew")
+
+# Crear etiqueta nombre de usuario
+name_label = tk.Label(text="Nombre", anchor="center", justify="center", bg="#f0f4f7", font=("Arial", 12))
+name_label.grid(row=1, column=0, sticky="e")
+
+# Crear campo del texto nombre de usuario
+user_name = tk.Entry(font=("Arial", 12), relief="solid", bd=1)
+user_name.grid(row=1, column=1, sticky="w", padx=10, pady=5)
+
+# Crear etiqueta de estatura
+height_label = tk.Label(text="Estatura: Centímetros", font=("Arial", 12, "bold"), anchor="center", bg="#f0f4f7")
+height_label.grid(row=2, column=0, sticky="e")
+
+# Crear campo de entrada para estatura
+height_entry = tk.Entry(font=("Arial", 12), relief="solid", bd=1)
+height_entry.grid(row=2, column=1, sticky="w", padx=10, pady=5)
+
+# Crear etiqueta de peso
+weight_label = tk.Label(text="Peso: Kilogramos", font=("Arial", 12, "bold"), anchor="center", bg="#f0f4f7")
+weight_label.grid(row=3, column=0, sticky="e")
+
+# Crear campo de entrada para peso
+weight_entry = tk.Entry(font=("Arial", 12), relief="solid", bd=1)
+weight_entry.grid(row=3, column=1, sticky="w", padx=10, pady=5)
+
+# Crear botón de calcular
+calculate_button = tk.Button(text="Calcular IMC", command=calculate_bmi, font=("Arial", 12), bg="#3498db", fg="white", relief="raised", bd=3)
+calculate_button.grid(row=4, column=0, sticky="e", padx=5, pady=10)
+
+# Crear botón de limpiar
+clear_button = tk.Button(text="Limpiar", command=clear_fields, font=("Arial", 12), bg="#e74c3c", fg="white", relief="raised", bd=3)
+clear_button.grid(row=4, column=1, sticky="w", padx=5, pady=10)
+
+# Crear botón para mostrar progreso
+progress_button = tk.Button(text="Mostrar Progreso", command=show_progress, font=("Arial", 12), bg="#2ecc71", fg="white", relief="raised", bd=3)
+progress_button.grid(row=5, column=0, columnspan=2, pady=20)
+
+# Crear etiqueta para mostrar resultados
+result_label = tk.Label(text="", font=("Arial", 12), anchor="center", justify="center", bg="#f0f4f7")
+result_label.grid(row=6, column=0, columnspan=2, pady=10, sticky="nsew")
+
+ventana.mainloop()
